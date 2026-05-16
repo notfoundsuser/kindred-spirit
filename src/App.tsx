@@ -3400,9 +3400,10 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
   const [global, setGlobal] = useState<any>(null);
   const [playing, setPlaying] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [result, setResult] = useState<{ score: number; zkltcSent: string; explorerUrl?: string; txHash?: string } | null>(null);
-  const [gameOverPending, setGameOverPending] = useState(false);
-  const [gameOverScore, setGameOverScore] = useState<number | null>(null);
+  const [gameOver, setGameOver] = useState<{ score: number; correct: number; wrong: number; level: number; levelName: string; best: number } | null>(null);
+  const [endingGame, setEndingGame] = useState(false);
+  const [sentNotice, setSentNotice] = useState('');
+  const [autoStart, setAutoStart] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
   const [errMsg, setErrMsg] = useState('');
 
@@ -3445,7 +3446,7 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
     return () => clearInterval(t);
   }, [lowerAddr]);
 
-  // Listen for score from iframe and submit /simple/end. React overlay owns the game-over UI.
+  // Listen for score from iframe. React overlay owns the game-over UI; conversion is triggered by the buttons.
   useEffect(() => {
     if (!lowerAddr) return;
     const onMsg = async (e: MessageEvent) => {
@@ -3453,9 +3454,9 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
       if (!d) return;
       if (d.type === 'litdex:mathslash:exit') {
         setPlaying(false);
-        setResult(null);
-        setGameOverPending(false);
-        setGameOverScore(null);
+        setGameOver(null);
+        setEndingGame(false);
+        setSentNotice('');
         try { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); } catch {}
         try { (screen.orientation as any)?.unlock?.(); } catch {}
         fetchStats();
@@ -3466,59 +3467,92 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
       if (!isGameOver) return;
 
       const score = Number(d.score) || 0;
-      setGameOverScore(score);
-      setGameOverPending(true);
-      setResult(null);
+      setGameOver({
+        score,
+        correct: Number(d.correct ?? d.totalCorrect ?? 0),
+        wrong: Number(d.wrong ?? d.totalWrong ?? 0),
+        level: Number(d.level ?? d.currentLevel ?? 1),
+        levelName: String(d.levelName ?? ''),
+        best: Number(d.best ?? d.bestScore ?? score),
+      });
+      setEndingGame(false);
+      setSentNotice('');
       setErrMsg('');
-
-      try {
-        const r = await fetch(`${SIMPLE_API}/simple/end`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet: lowerAddr, score }),
-        });
-        const data = await r.json().catch(() => ({}));
-        if (r.ok && data?.success !== false) {
-          const zkltcSent = String(data?.zkltcSent ?? (score * RATE).toFixed(8));
-          const explorerUrl = data?.explorerUrl || (data?.txHash ? `https://liteforge.explorer.caldera.xyz/tx/${data.txHash}` : undefined);
-          setResult({ score: Number(data?.score ?? score), zkltcSent, explorerUrl, txHash: data?.txHash });
-          try {
-            addNotif(lowerAddr, {
-              type: 'game',
-              title: 'Game Over',
-              message: `Scored ${score} · ${zkltcSent} zkLTC sent`,
-              link: explorerUrl,
-            });
-          } catch {}
-        } else {
-          setErrMsg(data?.error || data?.message || 'Failed to submit score');
-        }
-      } catch (err: any) {
-        setErrMsg(err?.message || 'Network error submitting score');
-      } finally {
-        setGameOverPending(false);
-        fetchStats();
-        fetchBoard();
-        fetchGlobal();
-      }
     };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
   }, [lowerAddr]);
 
+  const submitFinalScore = async (score: number) => {
+    const r = await fetch(`${SIMPLE_API}/simple/end`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet: lowerAddr, score }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || data?.success === false) throw new Error(data?.error || data?.message || 'Failed to submit score');
+    const zkltcSent = String(data?.zkltcSent ?? (score * RATE).toFixed(8));
+    const explorerUrl = data?.explorerUrl || (data?.txHash ? `https://liteforge.explorer.caldera.xyz/tx/${data.txHash}` : undefined);
+    try {
+      addNotif(lowerAddr, {
+        type: 'game',
+        title: 'Game Over',
+        message: `Scored ${score} · ${zkltcSent} zkLTC sent`,
+        link: explorerUrl,
+      });
+    } catch {}
+    return { zkltcSent, explorerUrl };
+  };
+
   const handlePlayAgain = async () => {
-    setResult(null);
-    setGameOverPending(false);
-    setGameOverScore(null);
+    if (!gameOver || endingGame) return;
+    const finalScore = gameOver.score;
+    setEndingGame(true);
+    setGameOver(null);
+    setSentNotice('');
     setErrMsg('');
-    setIframeKey(k => k + 1); // reload iframe — game's own PLAY button calls /simple/start
+    setAutoStart(true);
+    setIframeKey(k => k + 1);
+    submitFinalScore(finalScore)
+      .catch((err) => console.warn('[MathSlash] silent score submit failed:', err))
+      .finally(() => {
+        setEndingGame(false);
+        fetchStats();
+        fetchBoard();
+        fetchGlobal();
+      });
+  };
+
+  const handleGameOverExit = async () => {
+    if (!gameOver || endingGame) return;
+    setEndingGame(true);
+    setErrMsg('');
+    try {
+      const submitted = await submitFinalScore(gameOver.score);
+      setSentNotice(`✅ ${submitted.zkltcSent} zkLTC sent to wallet!`);
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      setPlaying(false);
+      setGameOver(null);
+      setSentNotice('');
+      setAutoStart(false);
+      try { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); } catch {}
+      try { (screen.orientation as any)?.unlock?.(); } catch {}
+      fetchStats();
+      fetchBoard();
+      fetchGlobal();
+    } catch (err: any) {
+      setErrMsg(err?.message || 'Network error submitting score');
+    } finally {
+      setEndingGame(false);
+    }
   };
 
   const handleExitGame = () => {
     setPlaying(false);
-    setResult(null);
-    setGameOverPending(false);
-    setGameOverScore(null);
+    setGameOver(null);
+    setEndingGame(false);
+    setSentNotice('');
+    setAutoStart(false);
     try { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); } catch {}
     try { (screen.orientation as any)?.unlock?.(); } catch {}
     fetchStats();
@@ -3540,7 +3574,9 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
   const startGame = async () => {
     if (!lowerAddr || starting) return;
     setErrMsg('');
-    setResult(null);
+    setGameOver(null);
+    setSentNotice('');
+    setAutoStart(false);
     setStarting(true);
     try {
       const r = await fetch(`${SIMPLE_API}/simple/start`, {
