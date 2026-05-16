@@ -381,9 +381,10 @@ async function getSignerContract(addr: string, abi: readonly unknown[]) {
 export const wagmiConfig = getDefaultConfig({
   appName: "LitVM Explorer",
   projectId: "litvm-explorer-public",
-  chains: [litvmChain],
+  chains: [litvmChain, sepoliaChain],
   transports: {
     [litvmChain.id]: http(RPC_URL),
+    [sepoliaChain.id]: http(SEPOLIA_RPC_URL),
   },
   ssr: false,
 });
