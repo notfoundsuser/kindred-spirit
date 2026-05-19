@@ -398,7 +398,7 @@ const PointsPage = ({ setPage }: { setPage: (p: PageID) => void }) => {
                   <MessageSquare size={10} className="text-white/40" />
                 </div>
                 <div className="font-bold text-white text-xl tracking-tight">
-                  {dailyMsg} <span className="text-xs text-white/20 font-medium">/ 40</span>
+                  {dailyMsg} <span className="text-xs text-white/20 font-medium">/ 20</span>
                 </div>
              </div>
           </div>
