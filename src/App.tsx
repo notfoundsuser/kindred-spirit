@@ -432,7 +432,7 @@ const PointsPage = ({ setPage }: { setPage: (p: PageID) => void }) => {
            <div className="space-y-4">
               <div className="flex justify-between items-end">
                 <div className="text-[9px] font-bold text-white uppercase tracking-[0.2em]">Social Messages</div>
-                <div className="text-[9px] text-white/40 uppercase font-mono">{dailyMsg}/40</div>
+                <div className="text-[9px] text-white/40 uppercase font-mono">{dailyMsg}/20</div>
               </div>
               <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
                 <motion.div initial={{ width: 0 }} animate={{ width: `${msgProgress}%` }} className="h-full rounded-full bg-white/40" />
