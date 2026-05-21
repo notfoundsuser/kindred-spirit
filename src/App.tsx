@@ -68,10 +68,12 @@ interface NavItemProps {
 // --- Components ---
 
 const LogoLD = ({ className = "", size = 20 }: { className?: string; size?: number }) => (
-  <div className={cn("relative flex items-center justify-center font-black italic tracking-tighter cursor-default filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]", className)}>
-    <span style={{ fontSize: size }} className="text-black leading-none select-none">L</span>
-    <span style={{ fontSize: size }} className="text-black leading-none -ml-[0.1em] select-none">D</span>
-  </div>
+  <img
+    src="https://raw.githubusercontent.com/notfoundsuser/kindred-spirit/main/public/coins/web_logo.png"
+    alt="LitDEX"
+    style={{ width: size * 1.6, height: size * 1.6 }}
+    className={cn("object-contain select-none", className)}
+  />
 );
 
 const NavItem = ({ icon: Icon, title, desc, badge, onClick }: NavItemProps) => (
