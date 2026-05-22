@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAccount } from "wagmi";
-import { BrowserProvider, Contract, formatEther, parseEther } from "ethers";
+import { ethers, BrowserProvider, Contract, formatEther, parseEther } from "ethers";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe, Users, Store, Send, Heart, MessageCircle, Share2, Plus,
@@ -16,6 +16,7 @@ const LIT_MESSENGER = "0xf7675CA40CF72bF8bcD4Acfcd6758600B9175108";
 const LIT_TRANSFER = "0x3ed433c6aEB5Dcc26563A8Ad9CC0Fc8C09a56EBB";
 const BACKEND_URL = "http://155.133.23.14:3005";
 const LITVM_CHAIN_ID = 4441;
+const LITVM_CHAIN_HEX = "0x115D";
 const EXPLORER = "https://liteforge.explorer.caldera.xyz";
 
 // ============ ABIs ============
@@ -62,11 +63,11 @@ const TRANSFER_ABI = [
 
 // Duration enum mapping
 const DURATIONS = [
-  { id: 0, label: "1 Year", price: "0.05" },
-  { id: 1, label: "2 Years", price: "0.09" },
-  { id: 2, label: "5 Years", price: "0.20" },
-  { id: 3, label: "10 Years", price: "0.35" },
-  { id: 4, label: "Forever", price: "0.50" },
+  { id: 1, label: "1 Year", price: "0.05" },
+  { id: 2, label: "2 Years", price: "0.09" },
+  { id: 5, label: "5 Years", price: "0.20" },
+  { id: 10, label: "10 Years", price: "0.35" },
+  { id: 99, label: "Forever", price: "0.50" },
 ];
 
 // ============ Helpers ============
