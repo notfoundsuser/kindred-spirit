@@ -16,7 +16,7 @@ const LIT_MESSENGER = "0xf7675CA40CF72bF8bcD4Acfcd6758600B9175108";
 const LIT_TRANSFER = "0x3ed433c6aEB5Dcc26563A8Ad9CC0Fc8C09a56EBB";
 const BACKEND_URL = "http://155.133.23.14:3005";
 const LITVM_CHAIN_ID = 4441;
-const LITVM_CHAIN_HEX = "0x115D";
+const LITVM_CHAIN_HEX = "0x1159";
 const EXPLORER = "https://liteforge.explorer.caldera.xyz";
 
 // ============ ABIs ============
@@ -149,6 +149,15 @@ export default function HubPage() {
     );
   }
 
+  // Blocking registration: hide all hub content until user registers a .lit name
+  if (!checkingName && !myName) {
+    return (
+      <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-4 overflow-hidden">
+        <RegisterNameModal onRegistered={(n) => { setMyName(n); setShowRegisterModal(false); }} />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pb-32">
       {/* Header */}
@@ -207,12 +216,6 @@ export default function HubPage() {
 
       {/* Modals */}
       <AnimatePresence>
-        {showRegisterModal && (
-          <RegisterNameModal
-            onClose={() => setShowRegisterModal(false)}
-            onRegistered={(n) => { setMyName(n); setShowRegisterModal(false); }}
-          />
-        )}
         {showSendModal && <SendZkLTCModal onClose={() => setShowSendModal(false)} />}
       </AnimatePresence>
     </div>
@@ -220,7 +223,7 @@ export default function HubPage() {
 }
 
 // ============ Register .lit Name Modal ============
-function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onRegistered: (n: string) => void }) {
+function RegisterNameModal({ onRegistered }: { onRegistered: (n: string) => void }) {
   const [name, setName] = useState("");
   const [available, setAvailable] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
@@ -306,7 +309,10 @@ function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onR
   };
 
   return (
-    <ModalShell onClose={onClose}>
+    <div
+      className="relative bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="text-center mb-6">
         <Sparkles className="w-10 h-10 text-white mx-auto mb-3" />
         <h2 className="text-2xl font-black text-white uppercase tracking-tight">Claim Your .lit Name</h2>
@@ -354,7 +360,7 @@ function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onR
         {submitting ? <Loader2 className="animate-spin" size={16} /> : null}
         Register · {selectedDuration.price} zkLTC
       </button>
-    </ModalShell>
+    </div>
   );
 }
 
