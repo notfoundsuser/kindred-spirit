@@ -309,7 +309,6 @@ function RegisterNameModal({ onRegistered }: { onRegistered: (n: string) => void
   };
 
   return (
-  return (
     <div
       className="relative bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
       onClick={(e) => e.stopPropagation()}
