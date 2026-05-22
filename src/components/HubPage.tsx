@@ -223,7 +223,7 @@ export default function HubPage() {
 }
 
 // ============ Register .lit Name Modal ============
-function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onRegistered: (n: string) => void }) {
+function RegisterNameModal({ onRegistered }: { onRegistered: (n: string) => void }) {
   const [name, setName] = useState("");
   const [available, setAvailable] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
