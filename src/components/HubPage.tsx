@@ -149,6 +149,15 @@ export default function HubPage() {
     );
   }
 
+  // Blocking registration: hide all hub content until user registers a .lit name
+  if (!checkingName && !myName) {
+    return (
+      <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-4 overflow-hidden">
+        <RegisterNameModal onRegistered={(n) => { setMyName(n); setShowRegisterModal(false); }} />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pb-32">
       {/* Header */}
@@ -207,12 +216,6 @@ export default function HubPage() {
 
       {/* Modals */}
       <AnimatePresence>
-        {showRegisterModal && (
-          <RegisterNameModal
-            onClose={() => setShowRegisterModal(false)}
-            onRegistered={(n) => { setMyName(n); setShowRegisterModal(false); }}
-          />
-        )}
         {showSendModal && <SendZkLTCModal onClose={() => setShowSendModal(false)} />}
       </AnimatePresence>
     </div>
