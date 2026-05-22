@@ -224,9 +224,10 @@ function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onR
   const [name, setName] = useState("");
   const [available, setAvailable] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
-  const [duration, setDuration] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(1);
   const [submitting, setSubmitting] = useState(false);
   const debounceRef = useRef<number | null>(null);
+  const selectedDuration = DURATIONS.find((d) => d.id === duration) || DURATIONS[0];
 
   useEffect(() => {
     if (!name || name.length < 3) { setAvailable(null); return; }
@@ -250,9 +251,53 @@ function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onR
     if (!name || !available) return;
     try {
       setSubmitting(true);
-      const value = parseEther(DURATIONS[duration].price);
-      await writeContract(LIT_NAME_REGISTRY, REGISTRY_ABI, "register", [name, duration], value);
-      showSuccess({ title: "Name registered!", rows: [{ label: "Name", value: `${name}.lit` }, { label: "Duration", value: DURATIONS[duration].label }] });
+      console.log("Starting registration...");
+      const eth = (window as any).ethereum;
+      if (!eth) throw new Error("No wallet detected");
+
+      let chainId = await eth.request({ method: "eth_chainId" });
+      console.log("Chain ID:", chainId);
+      console.log("Name:", name, "Duration:", duration);
+
+      if (chainId !== LITVM_CHAIN_HEX) {
+        try {
+          await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: LITVM_CHAIN_HEX }] });
+        } catch (switchError: any) {
+          if (switchError?.code === 4902 || switchError?.data?.originalError?.code === 4902) {
+            await eth.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: LITVM_CHAIN_HEX,
+                chainName: "LitVM LiteForge",
+                rpcUrls: ["https://liteforge.rpc.caldera.xyz/http"],
+                nativeCurrency: { name: "zkLTC", symbol: "zkLTC", decimals: 18 },
+                blockExplorerUrls: ["https://liteforge.explorer.caldera.xyz"],
+              }],
+            });
+          } else {
+            throw switchError;
+          }
+        }
+        chainId = await eth.request({ method: "eth_chainId" });
+        console.log("Chain ID:", chainId);
+      }
+
+      const provider = new ethers.BrowserProvider(eth);
+      const signer = await provider.getSigner();
+      const registry = new ethers.Contract(LIT_NAME_REGISTRY, [
+        "function register(string name, uint8 duration) external payable",
+        "function getPrice(uint8 duration) external view returns (uint256)",
+        "function isAvailable(string name) external view returns (bool)",
+      ], signer);
+      const price = await registry.getPrice(duration);
+      console.log("Price:", price.toString());
+      const stillAvailable = await registry.isAvailable(name);
+      if (!stillAvailable) throw new Error(`${name}.lit is no longer available`);
+      const tx = await registry.register(name, duration, { value: price });
+      console.log("Tx sent:", tx.hash);
+      await tx.wait();
+      console.log("Tx confirmed!");
+      showSuccess({ title: `✓ ${name}.lit registered!`, rows: [{ label: "Name", value: `${name}.lit` }, { label: "Duration", value: selectedDuration.label }] });
       onRegistered(name);
     } catch (e: any) {
       showError(e?.shortMessage || e?.message || "Registration failed");
