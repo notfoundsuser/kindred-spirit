@@ -351,7 +351,7 @@ function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onR
         className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
       >
         {submitting ? <Loader2 className="animate-spin" size={16} /> : null}
-        Register · {DURATIONS[duration].price} zkLTC
+        Register · {selectedDuration.price} zkLTC
       </button>
     </ModalShell>
   );
