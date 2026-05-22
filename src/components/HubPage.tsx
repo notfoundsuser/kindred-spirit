@@ -16,7 +16,7 @@ const LIT_MESSENGER = "0xf7675CA40CF72bF8bcD4Acfcd6758600B9175108";
 const LIT_TRANSFER = "0x3ed433c6aEB5Dcc26563A8Ad9CC0Fc8C09a56EBB";
 const BACKEND_URL = "http://155.133.23.14:3005";
 const LITVM_CHAIN_ID = 4441;
-const LITVM_CHAIN_HEX = "0x115D";
+const LITVM_CHAIN_HEX = "0x1159";
 const EXPLORER = "https://liteforge.explorer.caldera.xyz";
 
 // ============ ABIs ============
