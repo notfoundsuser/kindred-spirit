@@ -259,7 +259,7 @@ function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onR
       console.log("Chain ID:", chainId);
       console.log("Name:", name, "Duration:", duration);
 
-      if (chainId !== LITVM_CHAIN_HEX) {
+      if (chainId?.toLowerCase() !== LITVM_CHAIN_HEX.toLowerCase()) {
         try {
           await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: LITVM_CHAIN_HEX }] });
         } catch (switchError: any) {
@@ -280,6 +280,7 @@ function RegisterNameModal({ onClose, onRegistered }: { onClose: () => void; onR
         }
         chainId = await eth.request({ method: "eth_chainId" });
         console.log("Chain ID:", chainId);
+        if (chainId?.toLowerCase() !== LITVM_CHAIN_HEX.toLowerCase()) throw new Error("Please switch to LitVM LiteForge");
       }
 
       const provider = new ethers.BrowserProvider(eth);
